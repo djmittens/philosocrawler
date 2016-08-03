@@ -1,46 +1,49 @@
 buildscript {
-	ext {
-		springBootVersion = '1.4.0.RELEASE'
-	}
-	repositories {
-		mavenCentral()
-	}
-	dependencies {
-		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-	}
+    ext {
+        springBootVersion = '1.4.0.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
 }
 
 apply plugin: 'scala'
 apply plugin: 'spring-boot'
 
 jar {
-	baseName = 'philosocrawler'
-	version = '0.0.1-SNAPSHOT'
+    baseName = 'philosocrawler'
+    version = '0.0.1-SNAPSHOT'
 }
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 repositories {
-	jcenter()
+    jcenter()
 }
 
 
 dependencies {
-	compile('org.springframework.boot:spring-boot-starter-data-jpa')
-	compile('org.springframework.boot:spring-boot-starter-thymeleaf')
-	compile('org.springframework.boot:spring-boot-starter-web')
-	runtime('com.h2database:h2')
-	runtime('org.postgresql:postgresql')
-	testCompile('org.springframework.boot:spring-boot-starter-test')
+    compile('org.springframework.boot:spring-boot-starter-data-jpa')
+    compile('org.springframework.boot:spring-boot-starter-thymeleaf')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    runtime('com.h2database:h2')
+    runtime('org.postgresql:postgresql')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
 
-  //scala
-  // https://mvnrepository.com/artifact/org.scala-lang/scala-library
-  compile group: 'org.scala-lang', name: 'scala-library', version: '2.11.8'
+    //scala
+    // https://mvnrepository.com/artifact/org.scala-lang/scala-library
+    compile group: 'org.scala-lang', name: 'scala-library', version: '2.11.8'
 
-  // https://mvnrepository.com/artifact/org.scalatest/scalatest_2.11
-  testCompile group: 'org.scalatest', name: 'scalatest_2.11', version: '2.3.0-SNAP2'
+    // https://mvnrepository.com/artifact/org.scalatest/scalatest_2.11
+    testCompile group: 'org.scalatest', name: 'scalatest_2.11', version: '2.3.0-SNAP2'
 
-  // https://mvnrepository.com/artifact/org.jsoup/jsoup
-  compile group: 'org.jsoup', name: 'jsoup', version: '1.9.2'
+    // https://mvnrepository.com/artifact/com.typesafe.scala-logging/scala-logging_2.11
+    compile group: 'com.typesafe.scala-logging', name: 'scala-logging_2.11', version: '3.4.0'
+
+    // https://mvnrepository.com/artifact/org.jsoup/jsoup
+    compile group: 'org.jsoup', name: 'jsoup', version: '1.9.2'
 
 }

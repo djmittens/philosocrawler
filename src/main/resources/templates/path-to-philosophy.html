@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<body>
+    <form action="#" th:action="@{/}" th:object="${searchForm}" method="post">
+        <input type="text" id="search" th:field="*{searchForUrl}" />
+        <button type="submit" name="submit" value="Submit">Submit</button>
+        <br/>
+        <ul th:if="${#fields.hasErrors('*')}">
+            <li th:each="err : ${#fields.errors('*')}" th:text="${err}">Url has problems</li>
+        </ul>
+    </form>
+    <div id = "path">
+        <label>Total Hops: </label><span th:text ="${philosophyPath.size()}" > #### </span>
+        <ul>
+            <li th:each="page : ${philosophyPath}">
+                <p><a th:href="${page.url}" th:text="${page.title}">Some link</a></p>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>
