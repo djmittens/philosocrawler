@@ -24,6 +24,9 @@ repositories {
     jcenter()
 }
 
+task stage {
+    dependsOn build
+}
 
 dependencies {
     compile('org.springframework.boot:spring-boot-starter-data-jpa')
