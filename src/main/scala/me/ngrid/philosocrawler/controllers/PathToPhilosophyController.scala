@@ -1,6 +1,5 @@
 package me.ngrid.philosocrawler.controllers
 
-import java.util
 import java.util.Collections
 import javax.validation.Valid
 
@@ -8,7 +7,6 @@ import me.ngrid.philosocrawler.models.{PathPage, PathToPhilosophy}
 import me.ngrid.philosocrawler.services.PhilosophyPathService
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
-import org.springframework.validation.BindingResult
 import org.springframework.web.bind.annotation.{RequestMapping, RequestMethod}
 
 import scala.beans.BeanProperty

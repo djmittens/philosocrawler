@@ -8,3 +8,4 @@ spring.datasource:
   removeAbandoned: true
 
 hibernate.hbm2dll.auto: update
+spring.thymeleaf.cache: false

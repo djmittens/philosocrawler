@@ -109,7 +109,7 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
       return false
     }
 
-    logger.trace(s"Found next page link $link")
+    logger.info(s"Found next page link $link")
 
     true
   }
