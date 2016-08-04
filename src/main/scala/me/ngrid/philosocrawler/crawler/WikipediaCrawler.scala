@@ -42,7 +42,7 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
 
     if (depth > maxDepth) return None
 
-    val c = cache(page.id).map(x => visited ++ (page +: x))
+    val c = cache(page.id).map(stored => stored ++ visited  )
     if (c.nonEmpty) return c
 
     val p = findNextPage(page.id, validateLink)
@@ -85,7 +85,7 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
       true
     }
 
-    val a = es.select("div#mw-content-text>p>a").asScala.toList
+    val a = es.select("div#mw-content-text>p>a").select(":not(.mw-redirect)").asScala.toList
 
     a.find(x => validateLink(x) && nonCapitalValidator(x))
   }

@@ -1,6 +1,10 @@
 package me.ngrid.philosocrawler.crawler
 
+import java.util
+
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.scalatest.{FlatSpec, Matchers}
+import scala.collection.JavaConverters._
 
 /**
   *
