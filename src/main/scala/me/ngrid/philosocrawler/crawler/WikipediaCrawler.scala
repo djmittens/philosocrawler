@@ -1,8 +1,8 @@
 package me.ngrid.philosocrawler.crawler
 
 import com.typesafe.scalalogging.LazyLogging
-import org.jsoup.{HttpStatusException, Jsoup}
 import org.jsoup.nodes.Element
+import org.jsoup.{HttpStatusException, Jsoup}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -13,9 +13,10 @@ trait WikipediaCrawler {
 }
 
 object WikipediaPage {
-  def apply(e: Element): WikipediaPage =
-    WikipediaPage(e.attr("href").replaceFirst("/wiki/", ""), e.attr("title"), e.attr("href"))
-
+  def apply(getUrl: (String) => String)(e: Element): WikipediaPage = {
+    val pageId = e.attr("href").replaceFirst("/wiki/", "")
+    WikipediaPage(pageId, e.attr("title"), getUrl(pageId))
+  }
 }
 
 case class WikipediaPage(id: String, title: String, fullUrl: String)
@@ -45,8 +46,12 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
     if (c.nonEmpty) return c
 
     val p = findNextPage(page.id, validateLink)
-    if (p.isEmpty || visited.contains(p.get)) {
+    if (p.isEmpty) {
       logger.error(s"Could not find the next link for this page $page")
+      return None
+    }
+    if(visited.contains(p.get)) {
+      logger.error(s"Found a loop for page $p")
       return None
     }
 
@@ -54,27 +59,43 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
   }
 
   def findPage(pageId: String): Option[WikipediaPage] = {
-    val url = getUrl(pageId)
-    Try(Jsoup.connect(s"$wikiUrl$pageId").get().body().getElementById("firstHeading")).
-      recoverWith(logHttpError(url)).
+    Try(Jsoup.connect(getUrl(pageId)).get().body().getElementById("firstHeading")).
+      recoverWith(logHttpError(getUrl(pageId))).
       toOption.
       map(_.text).
       map(title => WikipediaPage(pageId, title, getUrl(pageId)))
   }
 
   def findNextPage(pageId: String, validator: (Element) => Boolean): Option[WikipediaPage] = {
-    val url = getUrl(pageId)
-    val html = Try(Jsoup.connect(url).
-      get().body().
-      select("div#mw-content-text>p>a").
-      select(":not(.mw-redirect, .mw-disambig)").
-      asScala.toList).
-      recoverWith(logHttpError(url))
+    val html = Try(Jsoup.connect(getUrl(pageId)).get().body()).
+      recoverWith(logHttpError(getUrl(pageId)))
 
     for {
-      links <- html.toOption
-      nextPage <- links.find(validator).map(WikipediaPage.apply)
-    } yield nextPage
+      page <- html.toOption
+      link <- searchNormalPage(page).orElse({searchDisambiguationPage(page)})
+    } yield WikipediaPage(getUrl)(link)
+  }
+
+  def searchNormalPage(es: Element): Option[Element] = {
+    def nonCapitalValidator(e: Element): Boolean = {
+      if (!e.text().charAt(0).isLower) {
+        logger.trace(s"Ignoring non lower case alpha characters $e")
+        return false
+      }
+      true
+    }
+
+    val a = es.select("div#mw-content-text>p>a").asScala.toList
+
+    a.find(x => validateLink(x) && nonCapitalValidator(x))
+  }
+
+  def searchDisambiguationPage(es: Element): Option[Element] = {
+    val a = es.select("div#mw-content-text>p + ul").
+      select("li>a").
+      asScala.toList
+
+    a.find(validateLink)
   }
 
   def getUrl(pageId: String): String = s"$wikiUrl$pageId"
@@ -90,11 +111,11 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
 
   def validateLink(link: Element): Boolean = {
     if (link.tagName() != "a") {
-      logger.warn(s"Was expecting an anchor tag for link but found $link")
+      logger.trace(s"Was expecting an anchor tag for link but found $link")
       return false
     }
 
-    if (!link.attr("href").startsWith("/wiki")) {
+    if (!link.attr("href").startsWith("/wiki/")) {
       logger.trace(s"Ignoring a link that doesn't start with /wiki $link")
       return false
     }
@@ -104,12 +125,7 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
       return false
     }
 
-    if (!link.text().charAt(0).isLower) {
-      logger.trace(s"Ignoring non lower case alpha characters $link")
-      return false
-    }
-
-    logger.info(s"Found next page link $link")
+    logger.trace(s"Found valid link $link")
 
     true
   }
