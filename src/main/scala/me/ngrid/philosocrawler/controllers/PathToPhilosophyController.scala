@@ -21,15 +21,8 @@ import scala.collection.JavaConverters._
 @Controller
 class PathToPhilosophyController(philosophyPathService: PhilosophyPathService) {
 
-  @RequestMapping(path = Array("/"), method = Array(RequestMethod.GET))
-  def emptyForm(model: Model): String = {
-    model.addAttribute("pathToPhilosophy", PathToPhilosophy(0, Nil))
-    model.addAttribute("searchForm", new SearchForm())
-    model.addAttribute("philosophyPath", Collections.emptyList[PathPage]())
-    "path-to-philosophy"
-  }
 
-  @RequestMapping(path = Array("/"), method = Array(RequestMethod.POST))
+  @RequestMapping(path = Array("/"), method = Array(RequestMethod.GET))
   def findPath(searchForm: SearchForm, bindingResult: BindingResult, model: Model): String = {
     model.addAttribute("pathToPhilosophy", PathToPhilosophy(0, Nil))
 
