@@ -4,12 +4,21 @@ import com.typesafe.scalalogging.LazyLogging
 import org.jsoup.nodes.Element
 import org.jsoup.{HttpStatusException, Jsoup}
 
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Try}
 
+/**
+  * Crawls the wikipedia pages by following the first link until it reaches a page with the target Id.
+  */
 trait WikipediaCrawler {
-  def crawl(pageId: String, cache: (String) => Option[List[WikipediaPage]]): Option[List[WikipediaPage]]
+  /**
+    *
+    * @param pageId id of the page to start crawling on.
+    * @param target stop the traversal when a page with this id has been reached.
+    * @param cache some results may have been calculated before, this function may provide an answer in case that occurs
+    * @return path from target to page id, beginning at target.
+    */
+  def crawl(pageId: String, target: String, cache: (String) => Option[List[WikipediaPage]]): Option[List[WikipediaPage]]
 }
 
 object WikipediaPage {
@@ -22,19 +31,20 @@ object WikipediaPage {
 case class WikipediaPage(id: String, title: String, fullUrl: String)
 
 class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
-                              maxDepth: Int = 100,
-                              stopOnPage: String = "Philosophy") extends WikipediaCrawler with LazyLogging {
+                              maxDepth: Int = 100) extends WikipediaCrawler with LazyLogging {
 
   override def crawl(pageId: String,
+                     target: String,
                      cache: (String) => Option[List[WikipediaPage]]): Option[List[WikipediaPage]] = {
     for {
       page <- findPage(pageId)
-      path <- crawl(page, cache)
+      path <- crawl(page, target, cache)
     } yield path
   }
 
-  @tailrec
+  @scala.annotation.tailrec
   final def crawl(page: WikipediaPage,
+                  stopOnPage: String,
                   cache: (String) => Option[List[WikipediaPage]],
                   visited: List[WikipediaPage] = Nil,
                   depth: Int = 0): Option[List[WikipediaPage]] = {
@@ -45,7 +55,7 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
     val c = cache(page.id).map(stored => stored ++ visited  )
     if (c.nonEmpty) return c
 
-    val p = findNextPage(page.id, validateLink)
+    val p = findNextPage(page, validateLink)
     if (p.isEmpty) {
       logger.error(s"Could not find the next link for this page $page")
       return None
@@ -55,7 +65,7 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
       return None
     }
 
-    crawl(p.get, cache, page +: visited, depth + 1)
+    crawl(p.get, stopOnPage, cache, page +: visited, depth + 1)
   }
 
   def findPage(pageId: String): Option[WikipediaPage] = {
@@ -66,9 +76,9 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
       map(title => WikipediaPage(pageId, title, getUrl(pageId)))
   }
 
-  def findNextPage(pageId: String, validator: (Element) => Boolean): Option[WikipediaPage] = {
-    val html = Try(Jsoup.connect(getUrl(pageId)).get().body()).
-      recoverWith(logHttpError(getUrl(pageId)))
+  def findNextPage(page: WikipediaPage, validator: (Element) => Boolean): Option[WikipediaPage] = {
+    val html = Try(Jsoup.connect(page.fullUrl).timeout(10000).get().body()).
+      recoverWith(logHttpError(page.fullUrl))
 
     for {
       page <- html.toOption
@@ -91,7 +101,7 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
   }
 
   def searchDisambiguationPage(es: Element): Option[Element] = {
-    val a = es.select("div#mw-content-text>p + ul").
+    val a = es.select("div#mw-content-text>p ~ ul").
       select("li>a").
       asScala.toList
 
@@ -129,5 +139,4 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
 
     true
   }
-
 }

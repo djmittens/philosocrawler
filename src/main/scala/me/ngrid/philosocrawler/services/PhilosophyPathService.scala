@@ -7,9 +7,6 @@ import me.ngrid.philosocrawler.models.{PathPage, PathToPhilosophy}
 import me.ngrid.philosocrawler.repositories.PathRepository
 import org.springframework.stereotype.Service
 
-/**
-  *
-  */
 trait PhilosophyPathService {
   def findPathForPageId(pageId: String): Option[PathToPhilosophy]
   def savePath(pathToPhilosophy: PathToPhilosophy)
@@ -35,7 +32,7 @@ class PhilosophyPathServiceImpl(wikipediaCrawler: WikipediaCrawler,
       }
     }
 
-    val path = wikipediaCrawler.crawl(pageId, pathCache).map(convertCrawlerPath)
+    val path = wikipediaCrawler.crawl(pageId, "Philosophy", pathCache).map(convertCrawlerPath)
     path.foreach(savePath)
     path
   }

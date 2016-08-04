@@ -2,9 +2,6 @@ package me.ngrid.philosocrawler.entities;
 
 import javax.persistence.*;
 
-/**
- *
- */
 @Entity
 @Table(name = "philosophy_paths")
 public class PathEntity {

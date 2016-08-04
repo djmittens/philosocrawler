@@ -22,7 +22,7 @@
     <div class="jumbotron" style="margin: auto; padding: 20px">
         <h1>PhilosoCrawler</h1>
         <small>Crawl wikipedia like a raptor</small>
-        <p>Plese use the search box, to search wikipedia by either url, or keywords</p>
+        <p>Use the search box to search, either by a link to wikipedia or by a keyword</p>
         <div>
             <form action="#" th:action="@{/}" th:object="${searchForm}" method="post">
                 <input type="text" id="search" size="90" th:field="*{searchForUrl}"/>

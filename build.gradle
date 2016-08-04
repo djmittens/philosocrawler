@@ -28,6 +28,10 @@ task stage {
     dependsOn build
 }
 
+bootRun {
+    systemProperties System.properties
+}
+
 dependencies {
     compile('org.springframework.boot:spring-boot-starter-data-jpa')
     compile('org.springframework.boot:spring-boot-starter-thymeleaf')
