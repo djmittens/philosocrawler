@@ -34,14 +34,14 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
                               maxDepth: Int = 100) extends WikipediaCrawler with LazyLogging {
 
   private[this] final val DEFAULT_LINK_VALIDATIONS = List(
-    testElement(s"anchor tag") { l =>
-      l.tagName() == "a"
+    testElement(s"anchor tag") {
+      _.tagName() == "a"
     },
-    testElement(s"wiki link") { l =>
-      l.attr("href").startsWith("/wiki/")
+    testElement(s"wiki link") {
+      _.attr("href").startsWith("/wiki/")
     },
-    testElement(s"link that has content") { l =>
-      l.hasText
+    testElement(s"link that has content") {
+      _.hasText
     }
   )
 
@@ -67,7 +67,8 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
     val c = cache(page.id).map(stored => stored ++ visited)
     if (c.nonEmpty) return c
 
-    val p = findNextPage(page, validateLink())
+    val p = findNextPage(page)
+
     if (p.isEmpty) {
       logger.error(s"Could not find the next link for this page $page")
       return None
@@ -82,13 +83,13 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
 
   def findPage(pageId: String): Option[WikipediaPage] = {
     Try(Jsoup.connect(getUrl(pageId)).get().body().getElementById("firstHeading")).
+      map(_.text).
       recoverWith(logHttpError(getUrl(pageId))).
       toOption.
-      map(_.text).
       map(title => WikipediaPage(pageId, title, getUrl(pageId)))
   }
 
-  def findNextPage(page: WikipediaPage, validator: (Element) => Boolean): Option[WikipediaPage] = {
+  def findNextPage(page: WikipediaPage): Option[WikipediaPage] = {
     val html = Try(Jsoup.connect(page.fullUrl).timeout(10000).get().body()).
       recoverWith(logHttpError(page.fullUrl))
 
@@ -106,19 +107,12 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
       _.text().charAt(0).isLower
     }
 
-    es.
-      select("div#mw-content-text>p>a").
-      select(":not(.mw-redirect)").asScala find {
-      validateLink(DEFAULT_LINK_VALIDATIONS :+ nonCapitalValidation)
-    }
+    es.select("div#mw-content-text>p>a").
+      select(":not(.mw-redirect)").asScala find validate(DEFAULT_LINK_VALIDATIONS :+ nonCapitalValidation)
   }
 
   def searchDisambiguationPage(es: Element): Option[Element] = {
-    val a = es.select("div#mw-content-text>p ~ ul").
-      select("li>a").
-      asScala.toList
-
-    a.find(validateLink())
+    es.select("div#mw-content-text>p ~ ul").select("li>a").asScala find validate(DEFAULT_LINK_VALIDATIONS)
   }
 
   def getUrl(pageId: String): String = s"$wikiUrl$pageId"
@@ -132,19 +126,19 @@ class EnglishWikipediaCrawler(wikiUrl: String = "http://en.wikipedia.org/wiki/",
       Failure(e)
   }
 
-  def validateLink(validations: List[(Element) => Try[Element]] = DEFAULT_LINK_VALIDATIONS)
-                  (link: Element ): Boolean = {
+  def validate[U](validations: List[(U) => Try[U]])
+                 (e: U): Boolean = {
 
-    val result = validations.foldLeft(Try[Element](link)) {
+    val result = validations.foldLeft(Try[U](e)) {
       case (out, f) => out flatMap f
     } recoverWith {
       case e: Throwable =>
-        logger.trace("link validation failed", e)
+        logger.trace("validation failed", e)
         Failure(e)
     }
 
     result foreach { x =>
-      logger.trace(s"Found a valid link $x")
+      logger.trace(s"validation success $x")
     }
 
     result.isSuccess
